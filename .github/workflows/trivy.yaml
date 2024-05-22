@@ -1,21 +1,62 @@
 name: build
+
 on:
   push:
     branches:
     - main
     - staging
   pull_request:
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-20.04
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Run Trivy vulnerability scanner in fs mode
+      id: trivy
       uses: aquasecurity/trivy-action@master
       with:
         scan-type: 'fs'
         scan-ref: '.'
+        format: 'json'
+        exit-code: '1' # Set exit code to 1 if vulnerabilities are found
+        output: 'trivy-results.json'
         trivy-config: trivy.yaml
+
+    - name: Upload Trivy Scan Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: trivy-results
+        path: trivy-results.json
+
+    - name: Check for vulnerabilities
+      id: check_vulns
+      run: |
+        HIGH_COUNT=$(jq '[.Results[].Vulnerabilities[] | select(.Severity == "HIGH")] | length' trivy-results.json)
+        CRITICAL_COUNT=$(jq '[.Results[].Vulnerabilities[] | select(.Severity == "CRITICAL")] | length' trivy-results.json)
+        echo "HIGH_COUNT=$HIGH_COUNT" >> $GITHUB_ENV
+        echo "CRITICAL_COUNT=$CRITICAL_COUNT" >> $GITHUB_ENV
+
+    - name: Fail if high or critical vulnerabilities found
+      if: env.HIGH_COUNT != '0' || env.CRITICAL_COUNT != '0'
+      run: exit 1
+
+    - name: Post comment on PR
+      if: github.event_name == 'pull_request' && (env.HIGH_COUNT != '0' || env.CRITICAL_COUNT != '0')
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { GITHUB_SHA } = process.env;
+          const HIGH_COUNT = process.env.HIGH_COUNT;
+          const CRITICAL_COUNT = process.env.CRITICAL_COUNT;
+          const comment = `:warning: Trivy found ${HIGH_COUNT} HIGH and ${CRITICAL_COUNT} CRITICAL vulnerabilities in the recent commit: ${GITHUB_SHA}.`;
+          github.rest.issues.createComment({
+            ...context.repo,
+            issue_number: context.issue.number,
+            body: comment
+          });
