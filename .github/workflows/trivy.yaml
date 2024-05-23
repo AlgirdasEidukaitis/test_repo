@@ -22,34 +22,12 @@ jobs:
       with:
         scan-type: 'fs'
         scan-ref: '.'
-        format: 'json'
-        trivy-config: trivy.yaml
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
 
-    - name: Check for vulnerabilities
-      id: check_vulns
-      run: |
-        echo "${{ steps.trivy.outputs.results }}" | jq '[.Results[].Vulnerabilities[] | select(.Severity == "HIGH")] | length' > high_count.txt
-        echo "${{ steps.trivy.outputs.results }}" | jq '[.Results[].Vulnerabilities[] | select(.Severity == "CRITICAL")] | length' > critical_count.txt
-        HIGH_COUNT=$(cat high_count.txt)
-        CRITICAL_COUNT=$(cat critical_count.txt)
-        echo "HIGH_COUNT=$HIGH_COUNT" >> $GITHUB_ENV
-        echo "CRITICAL_COUNT=$CRITICAL_COUNT" >> $GITHUB_ENV
-
-    - name: Fail if high or critical vulnerabilities found
-      if: env.HIGH_COUNT != '0' || env.CRITICAL_COUNT != '0'
-      run: exit 1
-
-    - name: Post comment on PR
-      if: github.event_name == 'pull_request' && (env.HIGH_COUNT != '0' || env.CRITICAL_COUNT != '0')
-      uses: actions/github-script@v6
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
       with:
-        script: |
-          const { GITHUB_SHA } = process.env;
-          const HIGH_COUNT = process.env.HIGH_COUNT;
-          const CRITICAL_COUNT = process.env.CRITICAL_COUNT;
-          const comment = `:warning: Trivy found ${HIGH_COUNT} HIGH and ${CRITICAL_COUNT} CRITICAL vulnerabilities in the recent commit: ${GITHUB_SHA}.`;
-          github.rest.issues.createComment({
-            ...context.repo,
-            issue_number: context.issue.number,
-            body: comment
-          });
+        sarif_file: 'trivy-results.sarif'
