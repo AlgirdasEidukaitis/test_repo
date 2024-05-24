@@ -39,12 +39,10 @@ jobs:
         high_count=$(grep -c 'High' trivy-results.txt)
         critical_count=$(grep -c 'Critical' trivy-results.txt)
 
-        echo "High vulnerabilities: $high_count"
-        echo "Critical vulnerabilities: $critical_count"
+        high_count=$(grep -c 'HIGH' trivy-results.txt || echo 0)
+        critical_count=$(grep -c 'CRITICAL' trivy-results.txt || echo 0)
 
         cat <<EOF | curl --data-binary @- http://143.47.187.120:9091/metrics/job/github_actions
-        # TYPE github_actions_high_vulnerabilities gauge
         github_actions_high_vulnerabilities $high_count
-        # TYPE github_actions_critical_vulnerabilities gauge
         github_actions_critical_vulnerabilities $critical_count
         EOF
