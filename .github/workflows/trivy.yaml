@@ -21,7 +21,7 @@ jobs:
         trivy-config: trivy.yaml
         severity: 'CRITICAL,HIGH,MEDIUM'
         format: json
-        output: trivy-results.json
+        output: ${{ github.workspace }}/trivy-results.json'
 
     - name: Upload Trivy results as artifact
       uses: actions/upload-artifact@v2
@@ -29,4 +29,3 @@ jobs:
         name: trivy-results
         path: '${{ github.workspace }}/trivy-results.json'
         retention-days: 20
-        
