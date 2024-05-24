@@ -1,4 +1,4 @@
-name: build
+name: trivy
 on:
   push:
     branches:
@@ -18,14 +18,49 @@ jobs:
       with:
         scan-type: fs
         scan-ref: '.'
-        trivy-config: trivy.yaml
-        severity: 'CRITICAL,HIGH,MEDIUM'
-        format: json
-        output: ${{ github.workspace }}/trivy-results.json'
+        output: trivy-results.txt
 
-    - name: Upload Trivy results as artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: trivy-results
-        path: '${{ github.workspace }}/trivy-results.json'
-        retention-days: 20
+    - name: Publish Trivy Output to Summary
+      run: |
+        if [[ -s trivy-results.txt ]]; then
+          {
+            echo "### Security Output"
+            echo "<details><summary>Click to expand</summary>"
+            echo ""
+            echo '```terraform'
+            cat trivy-results.txt
+            echo '```'
+            echo "</details>"
+          } >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Parse Trivy results and push to Prometheus
+      env:
+        REPO_NAME: ${{ github.repository }}
+      run: |
+        set -e
+
+        # Initialize counts to zero
+        high_count=0
+        critical_count=0
+        medium_count=0
+
+        if [[ -f trivy-results.txt && -s trivy-results.txt ]]; then
+          # Extract the counts from the 'Total' line
+          total_line=$(grep 'Total:' trivy-results.txt)
+          high_count=$(echo "$total_line" | grep -oP 'HIGH: \K\d+')
+          critical_count=$(echo "$total_line" | grep -oP 'CRITICAL: \K\d+')
+          medium_count=$(echo "$total_line" | grep -oP 'MEDIUM: \K\d+')
+        fi
+
+        echo "High vulnerabilities: $high_count"
+        echo "Critical vulnerabilities: $critical_count"
+        echo "Medium vulnerabilities: $medium_count"
+
+        repo_name="${REPO_NAME}"
+
+        cat <<EOF | curl --data-binary @- http://143.47.187.120:9091/metrics/job/github_actions
+        github_actions_high_vulnerabilities{repo="$repo_name"} $high_count
+        github_actions_critical_vulnerabilities{repo="$repo_name"} $critical_count
+        github_actions_medium_vulnerabilities{repo="$repo_name"} $medium_count
+        EOF
