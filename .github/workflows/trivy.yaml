@@ -35,12 +35,24 @@ jobs:
         fi
 
     - name: Parse Trivy results and push to Prometheus
+      env:
+        REPO_NAME: ${{ github.repository }}
       run: |
+        high_count=0
+        critical_count=0
 
-        high_count=$(grep -c 'HIGH' trivy-results.txt || echo 0)
-        critical_count=$(grep -c 'CRITICAL' trivy-results.txt || echo 0)
+        if [[ -f trivy-results.txt ]]; then
+          high_count=$(grep -c 'HIGH' trivy-results.txt || echo 0)
+          critical_count=$(grep -c 'CRITICAL' trivy-results.txt || echo 0)
+        fi
 
-        cat <<EOF | curl --data-binary @- http://143.47.187.120:9091/metrics/job/github_actions
-        github_actions_high_vulnerabilities $high_count
-        github_actions_critical_vulnerabilities $critical_count
+        echo "High vulnerabilities: $high_count"
+        echo "Critical vulnerabilities: $critical_count"
+
+        job_name="github_actions_${GITHUB_RUN_ID}"
+        repo_name="${REPO_NAME}"
+
+        cat <<EOF | curl --data-binary @- http://143.47.187.120:9091/metrics/job/$job_name
+        github_actions_high_vulnerabilities{job="$job_name", repo="$repo_name"} $high_count
+        github_actions_critical_vulnerabilities{job="$job_name", repo="$repo_name"} $critical_count
         EOF
