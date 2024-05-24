@@ -28,4 +28,4 @@ jobs:
       with:
         name: trivy-results
         path: '${{ github.workspace }}/trivy-results.json'
-        retention-days: 20
+        retention-days: 14
