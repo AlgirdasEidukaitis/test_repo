@@ -46,12 +46,21 @@ jobs:
         medium_count=0
 
         if [[ -f trivy-results.txt && -s trivy-results.txt ]]; then
-          # Extract the counts from the 'Total' line
-          total_line=$(grep 'Total:' trivy-results.txt)
-          high_count=$(echo "$total_line" | grep -oP 'HIGH: \K\d+')
-          critical_count=$(echo "$total_line" | grep -oP 'CRITICAL: \K\d+')
-          medium_count=$(echo "$total_line" | grep -oP 'MEDIUM: \K\d+')
+          # Sum up the counts from all 'Total' lines
+          while IFS= read -r line; do
+            high=$(echo "$line" | grep -oP 'HIGH: \K\d+')
+            critical=$(echo "$line" | grep -oP 'CRITICAL: \K\d+')
+            medium=$(echo "$line" | grep -oP 'MEDIUM: \K\d+')
+            
+            high_count=$((high_count + high))
+            critical_count=$((critical_count + critical))
+            medium_count=$((medium_count + medium))
+          done < <(grep 'Total:' trivy-results.txt)
         fi
+
+        echo "High vulnerabilities: $high_count"
+        echo "Critical vulnerabilities: $critical_count"
+        echo "Medium vulnerabilities: $medium_count"
 
         repo_name="${REPO_NAME}"
 
