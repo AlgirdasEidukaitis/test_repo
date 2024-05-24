@@ -19,11 +19,17 @@ jobs:
         scan-type: fs
         scan-ref: '.'
         format: json
-        output: '${{ github.workspace }}/trivy-results.json'
+        output: trivy-results.json
+
+    - name: Print current working directory
+      run: pwd
+
+    - name: List files in workspace
+      run: ls -al
 
     - name: Upload Trivy results as artifact
       uses: actions/upload-artifact@v2
       with:
         name: trivy-results
-        path: '${{ github.workspace }}/trivy-results.json'
+        path: trivy-results.json
         retention-days: 14
