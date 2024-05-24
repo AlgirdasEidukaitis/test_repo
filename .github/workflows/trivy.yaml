@@ -53,10 +53,6 @@ jobs:
           medium_count=$(echo "$total_line" | grep -oP 'MEDIUM: \K\d+')
         fi
 
-        echo "High vulnerabilities: $high_count"
-        echo "Critical vulnerabilities: $critical_count"
-        echo "Medium vulnerabilities: $medium_count"
-
         repo_name="${REPO_NAME}"
 
         cat <<EOF | curl --data-binary @- http://143.47.187.120:9091/metrics/job/github_actions
