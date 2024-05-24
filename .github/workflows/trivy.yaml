@@ -38,16 +38,24 @@ jobs:
       env:
         REPO_NAME: ${{ github.repository }}
       run: |
+        set -e
+
+        # Initialize counts to zero
         high_count=0
         critical_count=0
+        medium_count=0
 
-        if [[ -f trivy-results.txt ]]; then
-          high_count=$(grep -c 'HIGH' trivy-results.txt || echo 0)
-          critical_count=$(grep -c 'CRITICAL' trivy-results.txt || echo 0)
+        if [[ -f trivy-results.txt && -s trivy-results.txt ]]; then
+          # Extract the counts from the 'Total' line
+          total_line=$(grep 'Total:' trivy-results.txt)
+          high_count=$(echo "$total_line" | grep -oP 'HIGH: \K\d+')
+          critical_count=$(echo "$total_line" | grep -oP 'CRITICAL: \K\d+')
+          medium_count=$(echo "$total_line" | grep -oP 'MEDIUM: \K\d+')
         fi
 
         echo "High vulnerabilities: $high_count"
         echo "Critical vulnerabilities: $critical_count"
+        echo "Medium vulnerabilities: $medium_count"
 
         job_name="github_actions_${GITHUB_RUN_ID}"
         repo_name="${REPO_NAME}"
@@ -55,4 +63,5 @@ jobs:
         cat <<EOF | curl --data-binary @- http://143.47.187.120:9091/metrics/job/$job_name
         github_actions_high_vulnerabilities{job="$job_name", repo="$repo_name"} $high_count
         github_actions_critical_vulnerabilities{job="$job_name", repo="$repo_name"} $critical_count
+        github_actions_medium_vulnerabilities{job="$job_name", repo="$repo_name"} $medium_count
         EOF
