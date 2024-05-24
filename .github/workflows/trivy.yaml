@@ -27,6 +27,9 @@ jobs:
     - name: List files in workspace
       run: ls -al
 
+    - name: Display Trivy results
+      run: cat trivy-results.json
+      
     - name: Upload Trivy results as artifact
       uses: actions/upload-artifact@v2
       with:
