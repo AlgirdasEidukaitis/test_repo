@@ -16,6 +16,16 @@ jobs:
     - name: Run Trivy vulnerability scanner in fs mode
       uses: aquasecurity/trivy-action@master
       with:
-        scan-type: 'fs'
+        scan-type: fs
         scan-ref: '.'
         trivy-config: trivy.yaml
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        format: json
+        output: ${{ github.workspace }}/trivy-results.json'
+
+    - name: Upload Trivy results as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: trivy-results
+        path: '${{ github.workspace }}/trivy-results.json'
+        retention-days: 20
