@@ -1,33 +1,32 @@
 name: build
-
 on:
   push:
     branches:
     - main
     - staging
   pull_request:
-
 jobs:
   build:
     name: Build
     runs-on: ubuntu-20.04
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Run Trivy vulnerability scanner in fs mode
-      id: trivy
       uses: aquasecurity/trivy-action@master
       with:
-        scan-type: 'fs'
+        scan-type: fs
         scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        severity: 'CRITICAL,HIGH'
+        trivy-config: trivy.yaml
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        format: json
+        output: trivy-results.json
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
+    - name: Upload Trivy results as artifact
+      uses: actions/upload-artifact@v2
       with:
-        sarif_file: 'trivy-results.sarif'
+        name: trivy-results
+        path: '${{ github.workspace }}/trivy-results.json'
+        retention-days: 20
+        
