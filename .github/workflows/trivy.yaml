@@ -36,8 +36,6 @@ jobs:
 
     - name: Parse Trivy results and push to Prometheus
       run: |
-        high_count=$(grep -c 'High' trivy-results.txt)
-        critical_count=$(grep -c 'Critical' trivy-results.txt)
 
         high_count=$(grep -c 'HIGH' trivy-results.txt || echo 0)
         critical_count=$(grep -c 'CRITICAL' trivy-results.txt || echo 0)
