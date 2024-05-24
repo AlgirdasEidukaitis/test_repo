@@ -21,18 +21,17 @@ jobs:
         format: json
         output: trivy-results.json
 
-    - name: Print current working directory
-      run: pwd
+    - name: Parse Trivy results and push to Prometheus
+      run: |
+        high_count=$(jq '[.Results[].Vulnerabilities[] | select(.Severity=="HIGH")] | length' trivy-results.json)
+        critical_count=$(jq '[.Results[].Vulnerabilities[] | select(.Severity=="CRITICAL")] | length' trivy-results.json)
 
-    - name: List files in workspace
-      run: ls -al
+        echo "High vulnerabilities: $high_count"
+        echo "Critical vulnerabilities: $critical_count"
 
-    - name: Display Trivy results
-      run: cat trivy-results.json
-      
-    - name: Upload Trivy results as artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: trivy-results
-        path: trivy-results.json
-        retention-days: 14
+        cat <<EOF | curl --data-binary @- http://143.47.187.120:9091/metrics/job/github_actions
+        # TYPE github_actions_high_vulnerabilities gauge
+        github_actions_high_vulnerabilities $high_count
+        # TYPE github_actions_critical_vulnerabilities gauge
+        github_actions_critical_vulnerabilities $critical_count
+        EOF
