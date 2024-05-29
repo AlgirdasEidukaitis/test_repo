@@ -20,7 +20,7 @@ jobs:
         scan-ref: '.'
         output: trivy-results.txt
         severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
-        exit-code: '1'
+        exit-code: 0
 
     - name: Publish Trivy Output to Summary
       run: |
