@@ -1,0 +1,3 @@
+# requirements.txt
+Flask==0.1            # Known critical vulnerabilities (CVE-2018-1000656)
+requests==2.18.4      # Known medium vulnerabilities (CVE-2018-18074)
