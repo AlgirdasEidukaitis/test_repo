@@ -19,8 +19,8 @@ jobs:
         scan-type: fs
         scan-ref: '.'
         output: trivy-results.txt
+        trivy-config: trivy-conf.yaml
         severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
-        exit-code: 0
 
     - name: Publish Trivy Output to Summary
       run: |
