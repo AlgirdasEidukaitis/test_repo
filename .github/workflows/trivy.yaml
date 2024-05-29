@@ -6,7 +6,7 @@ on:
     - staging
   pull_request:
 jobs:
-  build:
+  trivy-test:
     name: Build
     runs-on: ubuntu-20.04
     steps:
@@ -19,6 +19,8 @@ jobs:
         scan-type: fs
         scan-ref: '.'
         output: trivy-results.txt
+        trivy-config: trivy.yaml
+        exit-code: '1'
 
     - name: Publish Trivy Output to Summary
       run: |
@@ -57,10 +59,6 @@ jobs:
             medium_count=$((medium_count + medium))
           done < <(grep 'Total:' trivy-results.txt)
         fi
-
-        echo "High vulnerabilities: $high_count"
-        echo "Critical vulnerabilities: $critical_count"
-        echo "Medium vulnerabilities: $medium_count"
 
         repo_name="${REPO_NAME}"
 
