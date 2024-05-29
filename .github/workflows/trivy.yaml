@@ -19,8 +19,8 @@ jobs:
         scan-type: fs
         scan-ref: '.'
         output: trivy-results.txt
-        exit-code: '1'
         severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+        exit-code: '1'
 
     - name: Publish Trivy Output to Summary
       run: |
